@@ -421,3 +421,18 @@ func TestCreateCsrfSession(t *testing.T) {
 		})
 	}
 }
+
+func TestGetQueryParamsHavingPrefix(t *testing.T) {
+	url := "http://ory.hydra.com/oauth2/auth?custom_param_1=value1&custom_param_2=value2&other_param_1=other1&other_param_2=other2"
+	customParams, _ := getQueryParamsHavingPrefix(url, "custom_")
+	assert.Equal(t, customParams.Get("custom_param_1"), "value1")
+	assert.Equal(t, customParams.Get("custom_param_2"), "value2")
+	assert.Equal(t, customParams.Has("other_param_1"), false)
+	assert.Equal(t, customParams.Has("other_param_2"), false)
+
+	otherParams, _ := getQueryParamsHavingPrefix(url, "other_")
+	assert.Equal(t, otherParams.Get("other_param_1"), "other1")
+	assert.Equal(t, otherParams.Get("other_param_2"), "other2")
+	assert.Equal(t, otherParams.Has("custom_param_1"), false)
+	assert.Equal(t, otherParams.Has("custom_param_2"), false)
+}

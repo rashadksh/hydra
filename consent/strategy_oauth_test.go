@@ -622,6 +622,26 @@ func TestStrategyLoginConsentNext(t *testing.T) {
 		assert.Regexp(t, fmt.Sprintf("ory_hydra_session_dev=.*; Path=%s; Expires=.*; Max-Age=0; HttpOnly; SameSite=Lax", cookiePath), setCookieHeader)
 	})
 
+	t.Run("case=should forward custom query parameters to login challenge redirect url", func(t *testing.T) {
+		c := createDefaultClient(t)
+		hc := &http.Client{
+			Jar:       testhelpers.NewEmptyCookieJar(t),
+			Transport: &http.Transport{},
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		}
+
+		_, oauthRes := makeOAuth2Request(t, reg, hc, c, url.Values{"redirect_uri": {c.RedirectURIs[0]}, "custom_theme_mode": {"dark"}, "other_param": {"other"}})
+		defer oauthRes.Body.Close()
+		assert.EqualValues(t, http.StatusFound, oauthRes.StatusCode)
+
+		loginChallengeRedirect, err := oauthRes.Location()
+		require.NoError(t, err)
+		assert.Equal(t, loginChallengeRedirect.Query().Get("custom_theme_mode"), "dark")
+		assert.False(t, loginChallengeRedirect.Query().Has("other_param"))
+	})
+
 	t.Run("case=should pass and check if login context is set properly", func(t *testing.T) {
 		// This should pass because login was remembered and session id should be set and session context should also work
 		subject := "aeneas-rekkas"

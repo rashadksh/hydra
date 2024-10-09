@@ -286,7 +286,10 @@ func (s *DefaultStrategy) forwardAuthenticationRequest(ctx context.Context, w ht
 		baseURL = s.c.LoginURL(ctx)
 	}
 
-	http.Redirect(w, r, urlx.SetQuery(baseURL, url.Values{"login_challenge": {encodedFlow}}).String(), http.StatusFound)
+	redirectQueryParams, _ := getQueryParamsHavingPrefix(iu.String(), "custom_")
+	redirectQueryParams.Set("login_challenge", encodedFlow)
+
+	http.Redirect(w, r, urlx.SetQuery(baseURL, redirectQueryParams).String(), http.StatusFound)
 
 	// generate the verifier
 	return errorsx.WithStack(ErrAbortOAuth2Request)
@@ -633,9 +636,12 @@ func (s *DefaultStrategy) forwardConsentRequest(
 		return errorsx.WithStack(err)
 	}
 
+	redirectQueryParams, _ := getQueryParamsHavingPrefix(as.LoginRequest.RequestURL, "custom_")
+	redirectQueryParams.Set("consent_challenge", consentChallenge)
+
 	http.Redirect(
 		w, r,
-		urlx.SetQuery(s.c.ConsentURL(ctx), url.Values{"consent_challenge": {consentChallenge}}).String(),
+		urlx.SetQuery(s.c.ConsentURL(ctx), redirectQueryParams).String(),
 		http.StatusFound,
 	)
 

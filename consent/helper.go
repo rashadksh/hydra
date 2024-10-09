@@ -4,6 +4,9 @@
 package consent
 
 import (
+	"net/url"
+	"strings"
+
 	"github.com/ory/fosite"
 	"github.com/ory/hydra/v2/client"
 	"github.com/ory/hydra/v2/flow"
@@ -37,4 +40,22 @@ func matchScopes(scopeStrategy fosite.ScopeStrategy, previousConsent []flow.Acce
 	}
 
 	return nil
+}
+
+func getQueryParamsHavingPrefix(rawURL string, prefix string) (url.Values, error) {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return url.Values{}, err
+	}
+
+	queryParams := parsedURL.Query()
+	filteredParams := url.Values{}
+
+	for key, values := range queryParams {
+		if strings.HasPrefix(key, prefix) {
+			filteredParams[key] = values
+		}
+	}
+
+	return filteredParams, nil
 }
